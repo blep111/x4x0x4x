@@ -12,7 +12,7 @@ a20 = '\x1b[38;5;226m'
 a22 = '\x1b[38;5;216m'  
 
 app = Flask(__name__)
-Almunharif_port_001 = 4000
+Almunharif_port_001 = 8080
 Almunharif_url_002 = input(f'{a20}URL : ')
 print()
 print(f'{a3}Take the server link and open it in the browser to view the statistics')
