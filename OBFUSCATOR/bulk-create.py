@@ -1,178 +1,251 @@
-import os
-import sys
-import zlib
-import time
-import base64
-import marshal
-import py_compile
+import os,sys,re,time,json
+import requests,bs4,string
+import faker,fake_email,random
+from faker import Faker
+from fake_email import Email
+from bs4 import BeautifulSoup
 
-# Select raw_input() or input()
-if sys.version_info[0]==2:
-    _input = "raw_input('%s')"
-elif sys.version_info[0]==3:
-    _input = "input('%s')"
-else:
-    sys.exit("\n YOUR PYTHON VERSION IS NOT SUPPORTED!")
+W = "\x1b[97m"
+G = "\x1b[38;5;46m"
+R = "\x1b[38;5;196m"
+X = f"{W}<{R}•{W}>"
 
-# Encoding
-zlb = lambda in_ : zlib.compress(in_)
-b16 = lambda in_ : base64.b16encode(in_)
-b32 = lambda in_ : base64.b32encode(in_)
-b64 = lambda in_ : base64.b64encode(in_)
-mar = lambda in_ : marshal.dumps(compile(in_,'<x>','exec'))
-note = "\x23\x20\x4f\x62\x66\x75\x73\x63\x61\x74\x65\x64\x20\x77\x69\x74\x68\x20\x50\x79\x4f\x62\x66\x75\x73\x63\x61\x74\x65\x0a\x23\x20\x68\x74\x74\x70\x73\x3a\x2f\x2f\x77\x77\x77\x2e\x67\x69\x74\x68\x75\x62\x2e\x63\x6f\x6d\x2f\x68\x74\x72\x2d\x74\x65\x63\x68\x0a\x23\x20\x54\x69\x6d\x65\x20\x3a\x20%s\n\x23\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x0a" % time.ctime()
+oks = []
+cps = []
 
-def banner(): # Program Banner
-    print('\033[91m ╔═════════════════════════════════╗\033[0m')
-    print('\033[92m ║         OBFUSCATOR             ║\033[0m')
-    print('\033[93m ║  PYTHON CODE OBFUSCATOR!       ║\033[0m')
-    print('\033[94m ║  AUTHOR : X4X0X4X             ║\033[0m')
-    print('\033[95m ║  IP : UNKNOWN                 ║\033[0m')
-    print('\033[91m ╚═════════════════════════════════╝\033[0m')
-    print()
+from fake_useragent import UserAgent
+ua = UserAgent()
+def ugenX():
+    ualist = [ua.random for _ in range(50)]
+    return str(random.choice(ualist))
 
-def menu(): # Program Menu
-    print('\033[96m [01] ENCODE MARSHAL\033[0m')
-    print('\033[97m [02] ENCODE ZLIB\033[0m')
-    print('\033[91m [03] ENCODE BASE16\033[0m')
-    print('\033[92m [04] ENCODE BASE32\033[0m')
-    print('\033[93m [05] ENCODE BASE64\033[0m')
-    print('\033[94m [06] ENCODE ZLIB,BASE16\033[0m')
-    print('\033[95m [07] ENCODE ZLIB,BASE32\033[0m')
-    print('\033[96m [08] ENCODE ZLIB,BASE64\033[0m')
-    print('\033[97m [09] ENCODE MARSHAL,ZLIB\033[0m')
-    print('\033[91m [10] ENCODE MARSHAL,BASE16\033[0m')
-    print('\033[92m [11] ENCODE MARSHAL,BASE32\033[0m')
-    print('\033[93m [12] ENCODE MARSHAL,BASE64\033[0m')
-    print('\033[94m [13] ENCODE MARSHAL,ZLIB,B16\033[0m')
-    print('\033[95m [14] ENCODE MARSHAL,ZLIB,B32\033[0m')
-    print('\033[96m [15] ENCODE MARSHAL,ZLIB,B64\033[0m')
-    print('\033[97m [16] SIMPLE ENCODE\033[0m')
-    print('\033[91m [17] EXIT\033[0m')
-    print()
+def fake_name():
+    first = Faker().first_name()
+    last = Faker().last_name()
+    return first,last
 
-class FileSize: # Gets the File Size
-    def datas(self,z):
-        for x in ['BYTE','KB','MB','GB']:
-            if z < 1024.0:
-                return "%3.1f %s" % (z,x)
-            z /= 1024.0
-    def __init__(self,path):
-        if os.path.isfile(path):
-            dts = os.stat(path).st_size
-            print(" [-] ENCODED FILE SIZE : %s\n" % self.datas(dts))
-# FileSize('rec.py')
-
-# Encode Menu
-def Encode(option,data,output):
-    loop = int(eval(_input % " [-] ENCODE COUNT : "))
-    if option == 1:
-        xx = "mar(data.encode('utf8'))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__[::-1]);"
-    elif option == 2:
-        xx = "zlb(data.encode('utf8'))[::-1]"
-        heading = "_ = lambda __ : __import__('zlib').decompress(__[::-1]);"
-    elif option == 3:
-        xx = "b16(data.encode('utf8'))[::-1]"
-        heading = "_ = lambda __ : __import__('base64').b16decode(__[::-1]);"
-    elif option == 4:
-        xx = "b32(data.encode('utf8'))[::-1]"
-        heading = "_ = lambda __ : __import__('base64').b32decode(__[::-1]);"
-    elif option == 5:
-        xx = "b64(data.encode('utf8'))[::-1]"
-        heading = "_ = lambda __ : __import__('base64').b64decode(__[::-1]);"
-    elif option == 6:
-        xx = "b16(zlb(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b16decode(__[::-1]));"
-    elif option == 7:
-        xx = "b32(zlb(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b32decode(__[::-1]));"
-    elif option == 8:
-        xx = "b64(zlb(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));"
-    elif option == 9:
-        xx = "zlb(mar(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('zlib').decompress(__[::-1]));"
-    elif option == 10:
-        xx = "b16(mar(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('base64').b16decode(__[::-1]));"
-    elif option == 11:
-        xx = "b32(mar(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('base64').b32decode(__[::-1]));"
-    elif option == 12:
-        xx = "b64(mar(data.encode('utf8')))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('base64').b64decode(__[::-1]));"
-    elif option == 13:
-        xx = "b16(zlb(mar(data.encode('utf8'))))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('zlib').decompress(__import__('base64').b16decode(__[::-1])));"
-    elif option == 14:
-        xx = "b32(zlb(mar(data.encode('utf8'))))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('zlib').decompress(__import__('base64').b32decode(__[::-1])));"
-    elif option == 15:
-        xx = "b64(zlb(mar(data.encode('utf8'))))[::-1]"
-        heading = "_ = lambda __ : __import__('marshal').loads(__import__('zlib').decompress(__import__('base64').b64decode(__[::-1])));"
-    else:
-        sys.exit("\n INVALID OPTION!")
-
-    for x in range(loop):
-        try:
-            data = "exec((_)(%s))" % repr(eval(xx))
-        except TypeError as s:
-            sys.exit(" TYPEERROR : " + str(s))
-    with open(output, 'w') as f:
-        f.write(note + heading + data)
-        f.close()
-
-# Special Encode
-def SEncode(data,output):
-    for x in range(5):
-        method = repr(b64(zlb(mar(data.encode('utf8'))))[::-1])
-        data = "exec(__import__('marshal').loads(__import__('zlib').decompress(__import__('base64').b64decode(%s[::-1]))))" % method
-    z = []
-    for i in data:
-        z.append(ord(i))
-    sata = "_ = %s\nexec(''.join(chr(__) for __ in _))" % z
-    with open(output, 'w') as f:
-        f.write(note + "exec(str(chr(35)%s));" % '+chr(1)'*10000)
-        f.write(sata)
-        f.close()
-    py_compile.compile(output,output)
-
-# Main Menu
-def MainMenu():
+def extractor(data):
     try:
-        os.system('clear') # os.system('cls')
-        banner()
-        menu()
-        try:
-            option = int(eval(_input % " [-] OPTION : "))
-        except ValueError:
-            sys.exit("\n INVALID OPTION !")
+        soup = BeautifulSoup(data,"html.parser")
+        data = {}
+        for inputs in soup.find_all("input"):
+            name = inputs.get("name")
+            value = inputs.get("value")
+            if name:
+                data[name] = value
+        return data
+    except Exception as e:
+        return {"error":str(e)}
 
-        if option > 0 and option <= 17:
-            if option == 17:
-                sys.exit("\n THANKS FOR USING THIS TOOL")
-            os.system('clear') # os.system('cls')
-            banner()
-        else:
-            sys.exit('\n INVALID OPTION !')
-        try:
-            file = eval(_input % " [-] FILE NAME : ")
-            data = open(file).read()
-        except IOError:
-            sys.exit("\n FILE NOT FOUND!")
+def GetEmail():
+    response = requests.post('https://api.internal.temp-mail.io/api/v3/email/new').json()
+    return response['email']
 
-        output = file.lower().replace('.py', '') + '_enc.py'
-        if option == 16:
-            SEncode(data,output)
+def GetCode(email):
+    try:
+        response = requests.get(f'https://api.internal.temp-mail.io/api/v3/email/{email}/messages').text
+        code = re.search(r'FB-(\d+)', response).group(1)
+        return code
+    except:
+        return None
+
+def banner():
+    os.system("clear")
+    print(f"{W}<{R}•{W}> PREMIUM BULK FB CREATOR🔥")
+    print(f"{W}<{R}•{W}> AUTHOR :- {G}X4X0X4")
+    print(f"{W}———————————————————————————————")
+
+def linex():
+    print(f"{W}———————————————————————————————")
+
+def key_approval():
+    banner()
+    key = input(f"{X} ENTER KEY: ")
+    if key == "unknown404":
+        print(f"{G}KEY APPROVED! WELCOME!.")
+        linex()
+    else:
+        print(f"{R}INVALID KEY! ACCESS DENIED.")
+        exit()
+
+def main() -> None:
+    key_approval()  # Added key approval check
+    input(f"{X} PRESS ENTER TO START....")
+    linex()
+    for make in range(100):
+        ses = requests.Session()
+        response = ses.get(
+            url='https://x.facebook.com/reg',
+            params={"_rdc":"1","_rdr":"","wtsid":"rdr_0t3qOXoIHbMS6isLw","refsrc":"deprecated"},
+        )
+        mts = ses.get("https://x.facebook.com").text
+        m_ts = re.search(r'name="m_ts" value="(.*?)"',str(mts)).group(1)
+        formula = extractor(response.text)
+        email2 = GetEmail()
+        firstname,lastname = fake_name()
+        print(f"{X} NAME  - {G}{firstname} {lastname}")
+        print(f"{X} EMAIL - {G}{email2}")
+        payload = {
+            'ccp': "2",
+            'reg_instance': str(formula["reg_instance"]),
+            'submission_request': "true",
+            'helper': "",
+            'reg_impression_id': str(formula["reg_impression_id"]),
+            'ns': "1",
+            'zero_header_af_client': "",
+            'app_id': "103",
+            'logger_id': str(formula["logger_id"]),
+            'field_names[0]': "firstname",
+            'firstname': firstname,
+            'lastname': lastname,
+            'field_names[1]': "birthday_wrapper",
+            'birthday_day': str(random.randint(1,28)),
+            'birthday_month': str(random.randint(1,12)),
+            'birthday_year': str(random.randint(1992,2009)),
+            'age_step_input': "",
+            'did_use_age': "false",
+            'field_names[2]': "reg_email__",
+            'reg_email__': email2,
+            'field_names[3]': "sex",
+            'sex': "2",
+            'preferred_pronoun': "",
+            'custom_gender': "",
+            'field_names[4]': "reg_passwd__",
+            'name_suggest_elig': "false",
+            'was_shown_name_suggestions': "false",
+            'did_use_suggested_name': "false",
+            'use_custom_gender': "false",
+            'guid': "",
+            'pre_form_step': "",
+            'encpass': '#PWD_BROWSER:0:{}:{}'.format(str(time.time()).split('.')[0],"unknown404"),
+            'submit': "Sign Up",
+            'fb_dtsg': "NAcMC2x5X2VrJ7jhipS0eIpYv1zLRrDsb5y2wzau2bw3ipw88fbS_9A:0:0",
+            'jazoest': str(formula["jazoest"]),
+            'lsd': str(formula["lsd"]),
+            '__dyn': "1ZaaAG1mxu1oz-l0BBBzEnxG6U4a2i5U4e0C8dEc8uwcC4o2fwcW4Ewk9E4W0pKq0FE6S0x81vohw5Owk8aE36wqEd8dE2YwbK0iC1qw8W0k-0jG3qaw4kwbS1Lw9C0le0ue0QU",
+            '__csr': "",
+            '__req': "p",
+            '__fmt': "1",
+            '__a': "AYkiA9jnQluJEy73F8jWiQ3NTzmH7L6RFbnJ_SMT_duZcpo2yLDpuVXfU2doLhZ-H1lSX6ucxsegViw9lLO6uRx31-SpnBlUEDawD_8U7AY4kQ",
+            '__user': "0"
+        }
+        header1 = {
+            "Host":"m.facebook.com",
+            "Connection":"keep-alive",
+            "Upgrade-Insecure-Requests":"1",
+            "User-Agent":ugenX(),
+            "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "dnt":"1",
+            "X-Requested-With":"mark.via.gp",
+            "Sec-Fetch-Site":"none",
+            "Sec-Fetch-Mode":"navigate",
+            "Sec-Fetch-User":"?1",
+            "Sec-Fetch-Dest":"document",
+            "dpr":"1.75",
+            "viewport-width":"980",
+            "sec-ch-ua":"\"Android WebView\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+            "sec-ch-ua-mobile":"?1",
+            "sec-ch-ua-platform":"\"Android\"",
+            "sec-ch-ua-platform-version":"\"\"",
+            "sec-ch-ua-model":"\"\"",
+            "sec-ch-ua-full-version-list":"",
+            "sec-ch-prefers-color-scheme":"dark",
+            "Accept-Encoding":"gzip, deflate, br, zstd",
+            "Accept-Language":"en-GB,en-US;q=0.9,en;q=0.8"
+        }
+        reg_url = "https://www.facebook.com/reg/submit/?privacy_mutation_token=eyJ0eXBlIjowLCJjcmVhdGlvbl90aW1lIjoxNzM0NDE0OTk2LCJjYWxsc2l0ZV9pZCI6OTA3OTI0NDAyOTQ4MDU4fQ%3D%3D&multi_step_form=1&skip_suma=0&shouldForceMTouch=1"
+        py_submit = ses.post(reg_url, data=payload, headers=header1)
+        #print(ses.cookies.get_dict().items())
+        if "c_user" in py_submit.cookies:
+            first_cok = ses.cookies.get_dict()
+            uid = str(first_cok["c_user"])
+            header2 = {
+                'authority': 'm.facebook.com',
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'accept-language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+                'cache-control': 'max-age=0',
+                'dpr': '2',
+                'referer': 'https://m.facebook.com/login/save-device/',
+                'sec-ch-prefers-color-scheme': 'light',
+                'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="125", "Google Chrome";v="125"',
+                'sec-ch-ua-mobile': '?1',
+                'sec-ch-ua-platform': '"Android"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'user-agent': ugenX(),
+                'viewport-width': '980',      
+            }
+            params = {
+                'next': 'https://m.facebook.com/?deoia=1',
+                'soft': 'hjk',
+            }
+            con_sub = ses.get('https://x.facebook.com/confirmemail.php', params=params, headers=header2).text
+            valid = GetCode(email2)
+            if valid:
+                print(f"{X} FB UID - {G}{uid}")
+                print(f"{X} LOGIN OTP - {G}{valid}")
+                confirm_id(email2,uid,valid,con_sub,ses)
+            else:
+                print(f"{X} \x1b[38;5;206mSUCCESSFULLY DISABLED ID")
+                linex()
         else:
-            Encode(option,data,output)
-        print("\n [-] SUCCESSFULLY ENCRYPTED %s" % file)
-        print(" [-] SAVED AS %s" % output)
-        FileSize(output)
-    except KeyboardInterrupt:
-        time.sleep(1)
-        sys.exit()
+            print(f"{X} {R}SUCCESSFULLY CHECKPOINT ID")
+            linex()
+
+def confirm_id(mail,uid,otp,data,ses):
+    try:
+        url = "https://m.facebook.com/confirmation_cliff/"
+        params = {
+        'contact': mail,
+        'type': "submit",
+        'is_soft_cliff': "false",
+        'medium': "email",
+        'code': otp}
+        payload = {
+        'fb_dtsg': 'NAcMC2x5X2VrJ7jhipS0eIpYv1zLRrDsb5y2wzau2bw3ipw88fbS_9A:0:0',
+        'jazoest': re.search(r'"\d+"', data).group().strip('"'),
+        'lsd': re.search('"LSD",\[\],{"token":"([^"]+)"}',str(data)).group(1),
+        '__dyn': "",
+        '__csr': "",
+        '__req': "4",
+        '__fmt': "1",
+        '__a': "",
+        '__user': uid}
+        headers = {
+        'User-Agent': ugenX(),
+        'Accept-Encoding': "gzip, deflate, br, zstd",
+        'sec-ch-ua-full-version-list': "",
+        'sec-ch-ua-platform': "\"Android\"",
+        'sec-ch-ua': "\"Android WebView\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+        'sec-ch-ua-model': "\"\"",
+        'sec-ch-ua-mobile': "?1",
+        'x-asbd-id': "129477",
+        'x-fb-lsd': "KnpjLz-YdSXR3zBqds98cK",
+        'sec-ch-prefers-color-scheme': "light",
+        'sec-ch-ua-platform-version': "\"\"",
+        'origin': "https://m.facebook.com",
+        'x-requested-with': "mark.via.gp",
+        'sec-fetch-site': "same-origin",
+        'sec-fetch-mode': "cors",
+        'sec-fetch-dest': "empty",
+        'referer': "https://m.facebook.com/confirmemail.php?next=https%3A%2F%2Fm.facebook.com%2F%3Fdeoia%3D1&soft=hjk",
+        'accept-language': "en-GB,en-US;q=0.9,en;q=0.8",
+        'priority': "u=1, i"}
+        response = ses.post(url, params=params, data=payload, headers=headers)
+        if "checkpoint" in str(response.url):
+            print(f"{X}{R} FUCKED ID DISABLED")
+            linex()
+        else:
+            cookie = (";").join([ "%s=%s" % (key,value) for key,value in ses.cookies.get_dict().items()])
+            print(f"{X} SUCCESS - {G}{uid}|unknown404|{cookie}")
+            open("/sdcard/SUCCESS-OK-ID.txt","a").write(uid+"|unknown404|"+cookie+"\n")
+            linex()
+    except Exception as e:
+        linex()
+        pass
 
 if __name__ == "__main__":
-    MainMenu()
+    main()
